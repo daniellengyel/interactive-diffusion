@@ -22,6 +22,7 @@ def create_animation_pictures(path, X, Y, Z, graph_type="contour"):
         plt.savefig(ani_path + "/{}.png".format(i))
     return ani_path
 
+
 # ffmpeg -r 20 -f image2 -s 1920x1080 -i %d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p test.mp4
 def create_animation(image_folder, video_name, screen_resolution="1920x1080", framerate=30, qaulity=25,
                      extension=".png"):

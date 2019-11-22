@@ -29,7 +29,7 @@ def simulated_annealing_janky(func, grad_func, x_curr, eps, gamma, temperature, 
                     -grad_func(x_curr) + temperature(t) * np.array([[np.random.normal()] for _ in range(x_curr.shape[0])]).reshape(x_curr.shape))
         path.append(x_next)
 
-        if np.abs(func(x_next) - func(x_curr)) < eps:  # TODO check what happens with more samples
+        if (eps != 0) and (np.abs(func(x_next) - func(x_curr)) < eps):  # TODO check what happens with more samples
             if verbose:
                 print(grad_func(x_curr))
             break
