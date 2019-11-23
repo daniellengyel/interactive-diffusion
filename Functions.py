@@ -7,7 +7,7 @@ def AckleyProblem(xs):
     out_shape = xs[0].shape
     a = np.exp(-0.2 * np.sqrt(1. / len(xs) * np.square(np.linalg.norm(xs, axis=0))))
     b = - np.exp(1. / len(xs) * np.sum(np.cos(2 * np.pi * xs), axis=0))
-    return -20 * a + b + 20 + np.exp(1).reshape(out_shape)
+    return np.array(-20 * a + b + 20 + np.exp(1)).reshape(out_shape)
 
 
 def GradAckleyProblem(xs):
