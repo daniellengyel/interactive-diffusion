@@ -1,17 +1,22 @@
 import numpy as np
 from Kernels import *
 from utils import *
+from Functions import Gibbs, GradGibbs
 
 
-def grad_descent(func, grad_func, x_curr, eps, gamma, start_t=0, end_t=float("inf"), verbose=False):
+def grad_descent(func, grad_func, x_curr, eps, gamma, start_t=0, end_t=float("inf"), verbose=False, domain_enforcer=None):
     x_curr = np.array(x_curr, dtype=np.float)
+    if domain_enforcer is not None:
+        x_curr = domain_enforcer(x_curr)
     path = [x_curr]
     t = start_t
     while t < end_t:
         x_next = x_curr - gamma(t) * grad_func(x_curr)
+        if domain_enforcer is not None:
+            x_next = domain_enforcer(x_next)
         path.append(x_next)
 
-        if np.abs(func(x_next) - func(x_curr)) < eps:  # TODO check what happens with more samples
+        if np.linalg.norm(x_next - x_curr) < eps:  # TODO check what happens with more samples
             if verbose:
                 print(grad_func(x_curr))
             break
@@ -23,16 +28,21 @@ def grad_descent(func, grad_func, x_curr, eps, gamma, start_t=0, end_t=float("in
     return np.array(path)
 
 
-def simulated_annealing_janky(func, grad_func, x_curr, eps, gamma, temperature, start_t=0, end_t=float("inf"), verbose=False):
+def simulated_annealing_janky(func, grad_func, x_curr, eps, gamma, temperature, start_t=0, end_t=float("inf"), verbose=False, domain_enforcer=None):
     x_curr = np.array(x_curr, dtype=np.float)
+    if domain_enforcer is not None:
+        x_curr = domain_enforcer(x_curr)
     path = [x_curr]
     t = start_t
     while t < end_t:
         x_next = x_curr + gamma(t) * (
                     -grad_func(x_curr) + temperature(t) * np.array([[np.random.normal()] for _ in range(x_curr.shape[0])]).reshape(x_curr.shape))
+        if domain_enforcer is not None:
+            x_next = domain_enforcer(x_next)
+
         path.append(x_next)
 
-        if (eps != 0) and (np.abs(func(x_next) - func(x_curr)) < eps):  # TODO check what happens with more samples
+        if (eps != 0) and (np.linalg.norm(x_next - x_curr) < eps):  # TODO check what happens with more samples
             if verbose:
                 print(grad_func(x_curr))
             break
@@ -46,7 +56,7 @@ def simulated_annealing_janky(func, grad_func, x_curr, eps, gamma, temperature, 
     return np.array(path)
 
 
-def interactive_diffusion(U, grad_U, first_process, second_process, total_iter, k, verbose=False):
+def interactive_diffusion(U, grad_U, first_process, second_process, total_iter, k, verbose=False, domain_enforcer=None):
     first_start = first_process["start"]
     first_gamma = first_process["gamma"]
     first_temperature = first_process["temperature"]
@@ -77,21 +87,54 @@ def interactive_diffusion(U, grad_U, first_process, second_process, total_iter, 
         for i in range(first_num_particles):
             p = first_paths[i][-1]
             path = simulated_annealing_janky(U, grad_U, p, first_epsilon, first_gamma, first_temperature,
-                                             start_t=t * first_num_iter, end_t=(t + 1) * first_num_iter)
+                                             start_t=t * first_num_iter, end_t=(t + 1) * first_num_iter, domain_enforcer=domain_enforcer)
             first_paths[i] = np.concatenate((first_paths[i], path[1:]), axis=0)
 
         # update second diffusion proccess
-        U_second_use = U
-        grad_U_second_use = grad_U_second(grad_U, k, grad_kernel, [p[-1] for p in first_paths])
+        interacting_particles = [p[-1] for p in first_paths]
+        U_second_use = U_second(U, k, kernel, interacting_particles)
+        grad_U_second_use = grad_U_second(grad_U, k, grad_kernel, interacting_particles)
         for i in range(second_num_particles):
+            if (len(second_paths[i]) > 2) and (np.linalg.norm(second_paths[i][-1] - second_paths[i][-2]) < second_epsilon):
+                continue
             p = second_paths[i][-1]
             path = simulated_annealing_janky(U_second_use, grad_U_second_use, p, second_epsilon, second_gamma,
-                                             second_temperature, start_t=t, end_t=t + 1)
+                                             second_temperature, start_t=t, end_t=t + 1, domain_enforcer=domain_enforcer)
             second_paths[i] = np.concatenate((second_paths[i], path[1:]), axis=0)
+
+        if particles_converged(second_paths, second_epsilon):
+            break
 
         if verbose:
             if t % 100 == 0:
                 print("Iter: ", t)
 
-    return np.array(first_paths), np.array(second_paths)
+    return first_paths, second_paths
+
+
+def interactive_diffusion_gibbs(U, grad_U, process, total_iter, k, sig, verbose=False, domain_enforcer=None):
+    p_start = process["start"]
+    p_gamma = process["gamma"]
+    p_temperature = process["temperature"]
+    p_num_particles = len(p_start)
+    p_num_iter = process["num_iter"]
+    p_epsilon = process["epsilon"]
+
+    dim = len(p_start[0])
+
+    # init num_particles
+    p_paths = [np.array([p]) for p in p_start]
+
+    U_second_use = U
+    grad_U_second_use = lambda x: grad_U(x) - k*GradGibbs(x, U, grad_U, sig)
+
+    for i in range(p_num_particles):
+        p = p_paths[i][-1]
+        path = simulated_annealing_janky(U_second_use, grad_U_second_use, p, p_epsilon, p_gamma,
+                                         p_temperature, start_t=0, end_t=total_iter, verbose=verbose, domain_enforcer=domain_enforcer)
+        p_paths[i] = path
+
+
+    return np.array(p_paths)
+
 

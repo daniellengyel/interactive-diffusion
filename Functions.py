@@ -35,3 +35,18 @@ def GradQuadraticFunctionInit(A):
         grad = np.dot(xs.T, A + A.T).T
         return np.array([g for g in grad]).reshape(out_shape)
     return GradQuadraticFunction
+
+
+def Gibbs(x, U, sig):
+    return np.exp(-U(np.array(x)) / sig ** 2)
+
+
+def GradGibbs(x, U, grad_U, sig):
+    return -grad_U(x) * 1./sig**2 * Gibbs(x, U, sig)
+
+if __name__ == "__main__":
+    x = np.array([[0, 1], [0, 2]])
+    g_out = Gibbs(x, AckleyProblem, 1)
+    grad_g_out = GradGibbs(x, AckleyProblem, GradAckleyProblem, 1)
+    print(g_out)
+    print(grad_g_out)

@@ -25,6 +25,12 @@ def V(x, K, particles):
 def grad_V(x, grad_K, particles):
     return V(x, grad_K, particles)
 
+def particles_converged(p_paths, epsilon):
+    for p in p_paths:
+        if not ((len(p) > 2) and (np.linalg.norm(p[-1] - p[-2]) < epsilon)):
+            return False
+    return True
+
 
 if __name__ == "__main__":
     from Kernels import *
