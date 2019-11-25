@@ -5,7 +5,7 @@ import time, os, subprocess
 from scipy import stats
 
 
-def create_animation_pictures(path, X, Y, Z, graph_type="contour"):
+def create_animation_pictures(path, X, Y, Z, graph_type="contour", graph_details={}):
     """
     path: path[:, 0]=path_x, path[:, 1]=path_y, path[:, 2]=path_z"""
     if not os.path.isdir("./tmp"):
@@ -15,7 +15,10 @@ def create_animation_pictures(path, X, Y, Z, graph_type="contour"):
 
     for i in range(len(path)):
         fig, ax = plt.subplots()
-        ax.contour(X, Y, Z, 40)
+        if graph_type == "contour":
+            ax.contour(X, Y, Z, graph_details["lines"])
+        else:
+            ax.imshow(Z, cmap=plt.cm.gist_earth_r, extent=[X[0][0], X[0][-1], Y[-1][0], Y[0][0]], interpolation=graph_details["interpolation"])
 
         # plot the path
         for j in range(max(0, i - 20), i):

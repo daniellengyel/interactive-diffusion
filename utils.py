@@ -4,7 +4,7 @@ import numpy as np
 #define potential for second proccess
 def U_second(U, k, kernel, particles):
     def U_second_helper(x):
-        return U(x) - k*V(x, kernel, particles)
+        return U(x) + k*V(x, kernel, particles)
     return U_second_helper
 
 
