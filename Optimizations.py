@@ -143,3 +143,5 @@ def interactive_diffusion_gibbs(U, grad_U, process, total_iter, k, sig, verbose=
     return np.array(p_paths)
 
 
+
+
