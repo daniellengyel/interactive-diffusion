@@ -1,4 +1,5 @@
 import numpy as np
+from pypoly import Polynomial
 
 # input format: xs[j][i] gives the value of the jth dimension of the ith point.
 # e.g. the ith point in xs is given by xs[:, i]
@@ -43,6 +44,49 @@ def Gibbs(x, U, sig):
 
 def GradGibbs(x, U, grad_U, sig):
     return -grad_U(x) * 1./sig**2 * Gibbs(x, U, sig)
+
+
+def grad_poly_problem(inp):
+    orig_shape = inp.shape
+
+    if len(inp.shape) == 1:
+        inp = inp.reshape((inp.shape[0], 1, 1))
+
+    X = [[0, -2], [1, 1], [2, 0.5], [3, 1.5], [2.5, 1], [-2.5, 1], [-1, 1], [-2, 0.5], [-3, 1.5]]
+
+    equations = np.array([[point[0] ** i for i in range(len(X))] for point in X])
+    values = np.array([point[1] for point in X])
+    coefficients = np.linalg.solve(equations, values)
+
+    coefficients = coefficients[1:]
+    coefficients = [coefficients[i] * (i + 1) for i in range(len(coefficients))]
+
+    p = Polynomial(*coefficients)
+
+    res = [np.array([[p(x) for x in row] for row in inp[0]])]
+    for s in inp[1:]:
+        res.append(2 * 3 / 9. * s)
+    return np.array(res).reshape(orig_shape)
+
+
+def poly_problem(inp):
+    orig_shape = inp.shape
+    if len(inp.shape) == 1:
+        inp = inp.reshape((inp.shape[0], 1, 1))
+
+    X = [[0, -2], [1, 1], [2, 0.5], [3, 1.5], [2.5, 1], [-2.5, 1], [-1, 1], [-2, 0.5], [-3, 1.5]]
+
+    equations = np.array([[point[0] ** i for i in range(len(X))] for point in X])
+    values = np.array([point[1] for point in X])
+    coefficients = np.linalg.solve(equations, values)
+
+    p = Polynomial(*coefficients)
+
+    res = np.array([[p(x) for x in row] for row in inp[0]])
+    for s in inp[1:]:
+        res += 3 / 9. * s ** 2
+    return res.reshape(orig_shape[1:])
+
 
 if __name__ == "__main__":
     x = np.array([[0, 1], [0, 2]])

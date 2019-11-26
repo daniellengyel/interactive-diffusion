@@ -78,8 +78,8 @@ def interactive_diffusion(U, grad_U, first_process, second_process, total_iter, 
 
     dim = len(second_start[0])
 
-    kernel = multi_gaussian(np.eye(dim))
-    grad_kernel = grad_gaussian(np.eye(dim))
+    kernel = multi_gaussian(3*np.eye(dim))
+    grad_kernel = grad_gaussian(3*np.eye(dim))
 
     # init num_particles
     first_paths = [np.array([p]) for p in first_start]

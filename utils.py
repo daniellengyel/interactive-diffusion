@@ -31,6 +31,30 @@ def particles_converged(p_paths, epsilon):
             return False
     return True
 
+def hyper_cube_enforcer(upper_bound=32.768, lower_bound=-32.768):
+    def helper(x):
+        filter_lower = x < lower_bound
+        x[filter_lower] = lower_bound +1
+
+        filter_upper = x > upper_bound
+        x[filter_upper] = upper_bound - 1
+        return x, any(filter_lower) or any(filter_upper)
+    return helper
+
+def percent_endpoint(x_star, end_points, epsilon):
+    num_reached = 0
+    for p in end_points:
+        if np.linalg.norm(x_star - p) < epsilon:
+            num_reached += 1
+    return num_reached * 1.0 / len(end_points)
+
+
+def filter_to_goal(x_star, epsilon, analytics):
+    filter_distance = np.array([np.linalg.norm(p - x_star) < epsilon for p in analytics["end_point"].values
+                                ])
+
+    return filter_distance
+
 
 if __name__ == "__main__":
     from Kernels import *
